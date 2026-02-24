@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build
+dist/
+.next/
+**/dist/
+
+# Environment (QUAN TRỌNG - không push key!)
+.env
+**/.env
+.env.local
+**/.env.local
+
+# Logs
+*.log
+**/*.log
+
+# OS
+.DS_Store
+Thumbs.db
