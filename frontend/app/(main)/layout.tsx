@@ -6,8 +6,12 @@ import { useAuthStore } from '@/stores/authStore';
 import Sidebar from '@/components/layout/Sidebar';
 import PlayerBar from '@/components/player/PlayerBar';
 import NowPlaying from '@/components/player/NowPlaying';
-import AudioPlayer from '@/components/player/AudioPlayer';
 import dynamic from 'next/dynamic';
+
+const AudioPlayer = dynamic(
+        () => import('@/components/player/AudioPlayer'),
+        { ssr: false } // chỉ chạy trên browser, không chạy trên server
+    );
 
 export default function MainLayout({
     children,
@@ -18,11 +22,6 @@ export default function MainLayout({
     const { isAuthenticated } = useAuthStore();
     const [hydrated, setHydrated] = useState(false);
 
-
-    const AudioPlayer = dynamic(
-        () => import('@/components/player/AudioPlayer'),
-        { ssr: false } // chỉ chạy trên browser, không chạy trên server
-    );
 
     // đợi localStorage load xong mới check auth
     useEffect(() => {

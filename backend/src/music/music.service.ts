@@ -33,6 +33,6 @@ export class MusicService {
         const track = await this.spotifyService.searchTracks(spotifyId);
         const youtubeQuery = `${track.title} ${track.artist} official`;
         const youtubeId = await this.youtubeService.searchVideo(youtubeQuery);
-        return { ...(track as any), youtubeId };
+        return { ...track, youtubeId };
     }
 }

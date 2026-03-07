@@ -14,6 +14,7 @@ export default function AudioPlayer() {
   const ytPlayerRef = useRef<any>(null);
   const htmlAudioRef = useRef<HTMLAudioElement | null>(null);
   const ytDivId = 'yt-player-container'; // ID cố định, không dùng ref
+  const ytReadyRef = useRef(false);
 
   const {
     currentSong,
@@ -23,11 +24,18 @@ export default function AudioPlayer() {
     setCurrentTime,
     setDuration,
     nextSong,
+    pauseSong,
   } = usePlayerStore();
 
+  const currentSongRef = useRef(currentSong);
+  useEffect(() => {
+    currentSongRef.current = currentSong;
+  }, [currentSong]);
+
   const getSource = () => {
-    if (currentSong?.preview_url) return 'preview';
-    if (currentSong?.youtubeId) return 'youtube';
+    const song = currentSongRef.current;
+    if (song?.preview_url) return 'preview';
+    if (song?.youtubeId) return 'youtube';
     return null;
   };
 
@@ -46,44 +54,69 @@ export default function AudioPlayer() {
       const tag = document.createElement('script');
       tag.src = 'https://www.youtube.com/iframe_api';
       document.head.appendChild(tag);
-      window.onYouTubeIframeAPIReady = () => initYoutubePlayer();
+      window.onYouTubeIframeAPIReady = () => {
+        initYoutubePlayer();
+      };
+    } else if (window.YT.Player && !ytPlayerRef.current) {
+      // YT API đã load rồi (hot reload)
+      initYoutubePlayer();
     }
 
     return () => {
       // cleanup khi unmount
       const el = document.getElementById(ytDivId);
       if (el) el.innerHTML = '';
+      ytReadyRef.current = false;
     };
   }, []);
 
   const initYoutubePlayer = () => {
-    const container = document.getElementById(ytDivId);
-    if (!container || ytPlayerRef.current) return;
+  if (ytPlayerRef.current) return;
+  const container = document.getElementById(ytDivId);
+  if (!container) return;
 
-    ytPlayerRef.current = new window.YT.Player(ytDivId, {
-      height: '0',
-      width: '0',
-      playerVars: { autoplay: 1, controls: 0, rel: 0 },
-      events: {
-        onReady: (e: any) => e.target.setVolume(volume * 100),
-        onStateChange: (e: any) => {
-          if (e.data === 0) nextSong();
-        },
+  ytPlayerRef.current = new window.YT.Player(ytDivId, {
+    height: '0',
+    width: '0',
+    playerVars: { autoplay: 1, controls: 0, rel: 0 },
+    events: {
+      onReady: (e: any) => {
+        e.target.setVolume(volume * 100);
+        ytReadyRef.current = true;
+
+        // YouTube vừa ready - kiểm tra có bài đang chờ phát không
+        const song = currentSongRef.current;
+        const state = usePlayerStore.getState();
+        if (song?.youtubeId && state.isPlaying) {
+          // small delay để tránh autoplay policy block
+          setTimeout(() => {
+            ytPlayerRef.current?.loadVideoById(song.youtubeId);
+          }, 300);
+        }
       },
-    });
-  };
+      onStateChange: (e: any) => {
+        if (e.data === 0) nextSong();
+      },
+      onError: () => {
+        nextSong();
+      },
+    },
+  });
+};
 
   // phát khi đổi bài
   useEffect(() => {
     if (!currentSong) return;
     const source = getSource();
 
-console.log('🎵 currentSong:', currentSong.title);
-  console.log('🔗 preview_url:', currentSong.preview_url);
-  console.log('📺 youtubeId:', currentSong.youtubeId);
-  console.log('🎯 source:', source);
-
+    if (!source) {
+      console.warn(`⚠️ "${currentSong.title}" không có nguồn phát — bỏ qua.`);
+      pauseSong();
+      return;
+    }
+    //
     if (source === 'preview') {
+      // dừng YouTube nếu đang phát
       ytPlayerRef.current?.stopVideo?.();
 
       if (!htmlAudioRef.current) {
@@ -95,30 +128,30 @@ console.log('🎵 currentSong:', currentSong.title);
         htmlAudioRef.current.addEventListener('loadedmetadata', () => {
           setDuration((htmlAudioRef.current!.duration) * 1000);
         });
+        htmlAudioRef.current.addEventListener('error', (e) => {
+          console.warn('Audio error:', e);
+          nextSong();
+        });
       }
 
       htmlAudioRef.current.src = currentSong.preview_url!;
       htmlAudioRef.current.volume = volume;
-      htmlAudioRef.current.play().catch(console.warn);
+      // isPlaying đã là true khi playSong() được gọi → phát luôn
+      htmlAudioRef.current.play().catch((err) => {
+        console.warn('Preview play failed:', err);
+      });
 
     } else if (source === 'youtube') {
+      // dừng HTML audio nếu đang phát
       if (htmlAudioRef.current) {
         htmlAudioRef.current.pause();
         htmlAudioRef.current.currentTime = 0;
       }
 
-      if (!ytPlayerRef.current) {
-        if (window.YT?.Player) {
-          initYoutubePlayer();
-          setTimeout(() => ytPlayerRef.current?.loadVideoById(currentSong.youtubeId), 500);
-        } else {
-          window.onYouTubeIframeAPIReady = () => {
-            initYoutubePlayer();
-            setTimeout(() => ytPlayerRef.current?.loadVideoById(currentSong.youtubeId), 500);
-          };
-        }
+      if (!ytReadyRef.current) {
         return;
       }
+
       ytPlayerRef.current.loadVideoById(currentSong.youtubeId);
     }
   }, [currentSong?.spotifyId]);
@@ -126,10 +159,12 @@ console.log('🎵 currentSong:', currentSong.title);
   // play / pause
   useEffect(() => {
     const source = getSource();
-    if (source === 'preview') {
-      if (isPlaying) htmlAudioRef.current?.play().catch(console.warn);
-      else htmlAudioRef.current?.pause();
-    } else if (source === 'youtube') {
+    if (!source) return;
+
+    if (source === 'preview' && htmlAudioRef.current?.src) {
+      if (isPlaying) htmlAudioRef.current.play().catch(console.warn);
+      else htmlAudioRef.current.pause();
+    } else if (source === 'youtube' && ytReadyRef.current) {
       if (isPlaying) ytPlayerRef.current?.playVideo?.();
       else ytPlayerRef.current?.pauseVideo?.();
     }
