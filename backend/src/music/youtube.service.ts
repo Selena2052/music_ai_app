@@ -13,25 +13,26 @@ export class YoutubeService {
   // tìm video YouTube theo tên bài + artist
   // mục đích: lấy videoId để embed player
   async searchVideo(query: string): Promise<string | null> {
-    const apiKey = this.config.get('YOUTUBE_API_KEY');
+    try {
+      const response = await this.httpService.axiosRef.get(
+        'https://www.googleapis.com/youtube/v3/search',
+        {
+          params: {
+            key: this.config.get('YOUTUBE_API_KEY'),
+            q: query,
+            part: 'snippet',
+            type: 'video',
+            videoCategoryId: '10',
+            maxResults: 1,
+          },
+        }
+      );
+      return response.data.items?.[0]?.id?.videoId || null;
 
-    const response = await firstValueFrom(
-      this.httpService.get('https://www.googleapis.com/youtube/v3/search', {
-        params: {
-          key: apiKey,
-          q: query,
-          part: 'snippet',
-          type: 'video',
-          videoCategoryId: '10', // category 10 = Music
-          maxResults: 1,
-        },
-      }),
-    ) as any;
-
-    const items = response.data.items;
-    if (!items || items.length === 0) return null;
-
-    // trả về videoId để frontend dùng embed YouTube player
-    return items[0].id.videoId;
+    } catch (error) {
+      // quota hết hoặc lỗi bất kỳ → return null, KHÔNG crash
+      console.warn('YouTube search skipped:', error?.response?.data?.error?.reason || error.message);
+      return null;
+    }
   }
 }

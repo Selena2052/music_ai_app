@@ -42,27 +42,27 @@ export class SpotifyService {
   }
 
   // tìm kiếm bài hát, trả về danh sách với metadata đầy đủ
-  async searchTracks(query: string, limit: number = 10) {
-    const token = await this.getAccessToken();
-
-    const response = await firstValueFrom(
-      this.httpService.get('https://api.spotify.com/v1/search', {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { q: query, type: 'track', limit },
-      }),
-    );
+  async searchTracks(query: string) {
+  const token = await this.getAccessToken();
+  const response = await this.httpService.axiosRef.get(
+    'https://api.spotify.com/v1/search',
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      params: { q: query, type: 'track', limit: 10 },
+    }
+  );
 
     // format lại data, chỉ lấy những gì cần
     return response.data.tracks.items.map((track: any) => ({
-      spotifyId: track.id,
-      title: track.name,
-      artist: track.artists.map((a: any) => a.name).join(', '),
-      album: track.album.name,
-      duration_ms: track.duration_ms,
-      image_url: track.album.images[0]?.url,
-      preview_url: track.preview_url,
-    }));
-  }
+    spotifyId: track.id,
+    title: track.name,
+    artist: track.artists.map((a: any) => a.name).join(', '),
+    album: track.album.name,
+    duration_ms: track.duration_ms,
+    image_url: track.album.images[0]?.url || null,
+    preview_url: track.preview_url || null,
+  }));
+}
 
   // lấy thông tin chi tiết 1 bài hát theo spotify ID
   async getTrack(spotifyId: string) {

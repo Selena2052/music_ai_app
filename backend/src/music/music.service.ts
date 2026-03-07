@@ -9,21 +9,25 @@ export class MusicService {
         private youtubeService: YoutubeService,
     ){}
 
-    // kết hợp Spotify + Youtube 
-    // Spotify lấy medata đẹp, Youtube lấy videoId để embed player
     async searchMusic(query: string) {
-        const tracks = await this.spotifyService.searchTracks(query) as any[];
-        // với mỗi bài từ Spotify, tìm videoId Youtube tương ứng
-        const results = await Promise.all(
-            tracks.map(async (track) => {
-                const youtubeQuery = `${track.title} ${track.artist} official`;
-                const youtubeId = await this.youtubeService.searchVideo(youtubeQuery);
-                return { ...track, youtubeId };
-            }),
-        );
+    const tracks = await this.spotifyService.searchTracks(query) as any[];
 
-        return results;
-    }
+    const results = await Promise.all(
+        tracks.map(async (track) => {
+            let youtubeId: string | null = null;
+            try {
+                const youtubeQuery = `${track.title} ${track.artist} official`;
+                youtubeId = await this.youtubeService.searchVideo(youtubeQuery);
+            } catch {
+                // YouTube quota hết → null, không crash
+                youtubeId = null;
+            }
+            return { ...track, youtubeId };
+        }),
+    );
+
+    return results;
+}
 
     async getTrackBySpotifyId(spotifyId: string) {
         const track = await this.spotifyService.searchTracks(spotifyId);
