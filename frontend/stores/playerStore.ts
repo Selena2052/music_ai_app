@@ -1,0 +1,115 @@
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { Song } from '@/types';
+
+interface PlayerState {
+  currentSong: Song | null;
+  queue: Song[];
+  isPlaying: boolean;
+  isShuffled: boolean;
+  repeatMode: 'none' | 'one' | 'all';
+  volume: number;
+  currentTime: number;
+  duration: number;
+  isNowPlayingOpen: boolean;
+
+  // Spotify
+  spotifyToken: string | null;
+  spotifyDeviceId: string | null;
+  spotifyReady: boolean;
+
+  // actions
+  playSong: (song: Song, queue?: Song[]) => void;
+  pauseSong: () => void;
+  resumeSong: () => void;
+  nextSong: () => void;
+  prevSong: () => void;
+  setVolume: (volume: number) => void;
+  setCurrentTime: (time: number) => void;
+  setDuration: (duration: number) => void;
+  toggleShuffle: () => void;
+  toggleRepeat: () => void;
+  toggleNowPlaying: () => void;
+  addToQueue: (song: Song) => void;
+  setSpotifyToken: (token: string) => void;
+  setSpotifyDeviceId: (id: string) => void;
+  setSpotifyReady: (ready: boolean) => void;
+  clearSpotifyToken: () => void;
+}
+
+export const usePlayerStore = create<PlayerState>()(
+  persist(
+    (set, get) => ({
+      currentSong: null,
+      queue: [],
+      isPlaying: false,
+      isShuffled: false,
+      repeatMode: 'none',
+      volume: 0.7,
+      currentTime: 0,
+      duration: 0,
+      isNowPlayingOpen: false,
+      spotifyToken: null,
+      spotifyDeviceId: null,
+      spotifyReady: false,
+
+      playSong: (song, queue = []) => set({
+        currentSong: song,
+        queue: queue.length > 0 ? queue : [song],
+        isPlaying: true,
+        currentTime: 0,
+      }),
+
+      pauseSong: () => set({ isPlaying: false }),
+      resumeSong: () => set({ isPlaying: true }),
+
+      nextSong: () => {
+        const { currentSong, queue, isShuffled, repeatMode } = get();
+        if (!currentSong || queue.length === 0) return;
+        const currentIndex = queue.findIndex(s => s.spotifyId === currentSong.spotifyId);
+        if (repeatMode === 'one') { set({ currentTime: 0, isPlaying: true }); return; }
+        let nextIndex = isShuffled
+          ? Math.floor(Math.random() * queue.length)
+          : currentIndex + 1;
+        if (nextIndex >= queue.length) {
+          if (repeatMode === 'all') nextIndex = 0;
+          else { set({ isPlaying: false }); return; }
+        }
+        set({ currentSong: queue[nextIndex], currentTime: 0, isPlaying: true });
+      },
+
+      prevSong: () => {
+        const { currentSong, queue, currentTime } = get();
+        if (!currentSong || queue.length === 0) return;
+        if (currentTime > 3000) { set({ currentTime: 0 }); return; }
+        const currentIndex = queue.findIndex(s => s.spotifyId === currentSong.spotifyId);
+        if (currentIndex <= 0) return;
+        set({ currentSong: queue[currentIndex - 1], currentTime: 0, isPlaying: true });
+      },
+
+      setVolume: (volume) => set({ volume }),
+      setCurrentTime: (currentTime) => set({ currentTime }),
+      setDuration: (duration) => set({ duration }),
+      toggleShuffle: () => set(s => ({ isShuffled: !s.isShuffled })),
+      toggleRepeat: () => set(s => ({
+        repeatMode: s.repeatMode === 'none' ? 'all' : s.repeatMode === 'all' ? 'one' : 'none'
+      })),
+      toggleNowPlaying: () => set(s => ({ isNowPlayingOpen: !s.isNowPlayingOpen })),
+      addToQueue: (song) => set(s => ({ queue: [...s.queue, song] })),
+      setSpotifyToken: (token) => set({ spotifyToken: token }),
+      setSpotifyDeviceId: (id) => set({ spotifyDeviceId: id }),
+      setSpotifyReady: (ready) => set({ spotifyReady: ready }),
+      clearSpotifyToken: () => set({ spotifyToken: null, spotifyDeviceId: null, spotifyReady: false }),
+    }),
+    {
+      name: 'player-storage',
+      partialize: (state) => ({
+        volume: state.volume,
+        isShuffled: state.isShuffled,
+        repeatMode: state.repeatMode,
+        // lưu spotify token để không cần login lại
+        spotifyToken: state.spotifyToken,
+      }),
+    }
+  )
+);
