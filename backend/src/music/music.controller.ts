@@ -14,6 +14,18 @@ export class MusicController {
         return this.musicService.searchMusic(query);
     }
 
+    // Endpoint mới cho lazy load YouTube
+    // Frontend gọi khi user click phát, không phải khi search
+    @Get(':id/youtube')
+    @UseGuards(AuthGuard('jwt'))
+    getYoutubeId(
+        @Param('id') spotifyId: string,
+        @Query('title') title: string,
+        @Query('artist') artist: string,
+    ) {
+        return this.musicService.getYoutubeId(spotifyId, title, artist);
+    }
+
     // GET /api/music/:id → lấy chi tiết 1 bài theo spotifyId
     @Get(':id')
     @UseGuards(AuthGuard('jwt'))

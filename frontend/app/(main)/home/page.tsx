@@ -1,5 +1,6 @@
 'use client';
 
+
 import { useState, useEffect } from 'react';
 import { usePlayerStore } from '@/stores/playerStore';
 import { useMusicStore } from '@/stores/musicStore';
@@ -7,6 +8,7 @@ import { useAiStore } from '@/stores/aiStore';
 import { useAuthStore } from '@/stores/authStore';
 import { Search, Palette } from 'lucide-react';
 import { Song } from '@/types';
+
 
 const MOODS = [
   { emoji: '😊', label: 'Vui vẻ', query: 'happy upbeat' },
@@ -32,7 +34,7 @@ const THEMES = [
 
 export default function HomePage() {
   const { user } = useAuthStore();
-  const { playSong, currentSong, isPlaying } = usePlayerStore();
+  const { playSong, currentSong, isPlaying, fetchYoutubeId } = usePlayerStore();
   const { searchResults, isSearching, searchSongs, isLiked, likeSong, unlikeSong, addToRecentlyPlayed } = useMusicStore();
   const { currentMood } = useAiStore();
 
@@ -84,9 +86,16 @@ export default function HomePage() {
     }
   };
 
-  const handlePlaySong = (song: Song) => {
+  const handlePlaySong = async (song: Song) => {
+    // playSong trước để UI response ngay (hiện loading state)
     playSong(song, searchResults.length > 0 ? searchResults : [song]);
     addToRecentlyPlayed(song);
+
+    // Nếu không có preview_url thì cần youtubeId
+    if (!song.preview_url && !song.youtubeId) {
+      await fetchYoutubeId(song);
+      // AudioPlayer sẽ tự detect youtubeId mới qua currentSong update
+    }
   };
 
   const formatDuration = (ms: number) => {

@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Song } from '@/types';
+import api from '@/lib/axios';
+import { useIsFetching } from '@tanstack/react-query';
 
 interface PlayerState {
   currentSong: Song | null;
@@ -12,6 +14,9 @@ interface PlayerState {
   currentTime: number;
   duration: number;
   isNowPlayingOpen: boolean;
+
+  isFetchingYoutube: boolean;
+  fetchYoutubeId: (song: Song) => Promise<string | null>;
 
   // Spotify
   spotifyToken: string | null;
@@ -52,6 +57,8 @@ export const usePlayerStore = create<PlayerState>()(
       spotifyToken: null,
       spotifyDeviceId: null,
       spotifyReady: false,
+
+      isFetchingYoutube: false,
 
       playSong: (song, queue = []) => set({
         currentSong: song,
@@ -100,6 +107,34 @@ export const usePlayerStore = create<PlayerState>()(
       setSpotifyDeviceId: (id) => set({ spotifyDeviceId: id }),
       setSpotifyReady: (ready) => set({ spotifyReady: ready }),
       clearSpotifyToken: () => set({ spotifyToken: null, spotifyDeviceId: null, spotifyReady: false }),
+
+      fetchYoutubeId: async (song) => {
+        // Đã có rồi thì dùng luôn
+        if (song.youtubeId) return song.youtubeId;
+
+        set({ isFetchingYoutube: true });
+        try {
+          const res = await api.get(`/music/${song.spotifyId}/youtube` , {
+            params: { title: song.title, artist: song.artist },
+          });
+          const youtubeId = res.data || null;
+
+          // Cập nhật lại currentSong và queue với youtubeId mới
+          set((state) => ({
+            isFetchingYoutube: false,
+            currentSong: state.currentSong?.spotifyId === song.spotifyId
+              ? { ...state.currentSong, youtubeId}
+              : state.currentSong,
+            queue: state.queue.map((s) => 
+              s.spotifyId === song.spotifyId ? { ...s, youtubeId} : s
+          ),
+          }));
+          return youtubeId;
+        } catch {
+          set({ isFetchingYoutube: false});
+          return null;
+        }
+      }
     }),
     {
       name: 'player-storage',

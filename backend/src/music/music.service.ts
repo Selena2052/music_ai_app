@@ -9,30 +9,27 @@ export class MusicService {
         private youtubeService: YoutubeService,
     ){}
 
+    // Lazy load: chỉ trả Spotify data, KHÔNG gọi YouTube
+    // YouTube sẽ được fetch khi user thực sự click phát
+
     async searchMusic(query: string) {
-    const tracks = await this.spotifyService.searchTracks(query) as any[];
-
-    const results = await Promise.all(
-        tracks.map(async (track) => {
-            let youtubeId: string | null = null;
-            try {
-                const youtubeQuery = `${track.title} ${track.artist} official`;
-                youtubeId = await this.youtubeService.searchVideo(youtubeQuery);
-            } catch {
-                // YouTube quota hết → null, không crash
-                youtubeId = null;
-            }
-            return { ...track, youtubeId };
-        }),
-    );
-
-    return results;
+        const tracks = await this.spotifyService.searchTracks(query) as any[];
+        // ytid = null, fe sẽ fetch sau khi cần
+        return tracks.map((track) => ({ ...track, youtubeId: null}));
 }
+
+    // Endpoint riêng — chỉ gọi khi user click phát
+    // Cache hit -> 0 units, Cache miss -> 100 units
+    async getYoutubeId(spotifyId: string, title: string, artist: string): Promise<string | null> {
+        const query = `${title} ${artist} official audio`;
+        return this.youtubeService.searchVideo(query);
+    }
 
     async getTrackBySpotifyId(spotifyId: string) {
         const track = await this.spotifyService.searchTracks(spotifyId);
-        const youtubeQuery = `${track.title} ${track.artist} official`;
-        const youtubeId = await this.youtubeService.searchVideo(youtubeQuery);
+        const youtubeId = await this.youtubeService.searchVideo(
+            `${track.title} ${track.artist} official audio`
+        );
         return { ...track, youtubeId };
     }
 }

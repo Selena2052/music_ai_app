@@ -4,10 +4,26 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { MusicModule } from './music/music.module';
 import { AiModule } from './ai/ai.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import { config } from 'process';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+
+    // Redis Cache = global, dùng nhạc ở mọi module
+    CacheModule.registerAsync({
+      isGlobal: true,
+      imports: [ConfigModule],
+      useFactory: (config: ConfigService) => ({
+        store: 'ioredis',
+        host: config.get('REDIS_HOST') || 'localhost',
+        port: +(config.get('REDIS_PORT') || 6379),
+        ttl: 60 * 60 * 24, // ytid không đổi 24h
+        max: 10000,   // max 10k entries trong ram
+      }),
+      inject: [ConfigService],
+    }),
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],

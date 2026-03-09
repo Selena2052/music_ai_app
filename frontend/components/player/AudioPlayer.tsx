@@ -110,8 +110,6 @@ export default function AudioPlayer() {
     const source = getSource();
 
     if (!source) {
-      console.warn(`⚠️ "${currentSong.title}" không có nguồn phát — bỏ qua.`);
-      pauseSong();
       return;
     }
     //
@@ -154,7 +152,7 @@ export default function AudioPlayer() {
 
       ytPlayerRef.current.loadVideoById(currentSong.youtubeId);
     }
-  }, [currentSong?.spotifyId]);
+  }, [currentSong?.spotifyId, currentSong?.youtubeId]);
 
   // play / pause
   useEffect(() => {
