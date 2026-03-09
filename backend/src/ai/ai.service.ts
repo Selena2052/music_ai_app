@@ -15,14 +15,24 @@ export class AiService {
 
     const response = await firstValueFrom(
       this.httpService.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        'https://api.groq.com/openai/v1/chat/completions',
         {
-          contents: [{ parts: [{ text: prompt }] }],
+          model: 'llama-3.1-8b-instant',
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 1000,
         },
+        {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+        },
+        }
       ),
     ) as any;
 
-    return response.data.candidates[0].content.parts[0].text;
+    console.log('GROQ RESPONSE:', JSON.stringify(response.data, null, 2));
+
+    return response.data.choices[0].message.content;
   }
 
   async detectMood(userMessage: string) {

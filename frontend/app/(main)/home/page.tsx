@@ -36,7 +36,7 @@ export default function HomePage() {
   const { user } = useAuthStore();
   const { playSong, currentSong, isPlaying, fetchYoutubeId } = usePlayerStore();
   const { searchResults, isSearching, searchSongs, isLiked, likeSong, unlikeSong, addToRecentlyPlayed } = useMusicStore();
-  const { currentMood } = useAiStore();
+  const { currentMood, detectMood } = useAiStore();
 
   const [activeMood, setActiveMood] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,15 +72,27 @@ export default function HomePage() {
     setShowTheme(false);
   };
 
-  const handleMoodClick = async (index: number, query: string) => {
+  const handleMoodClick = async (index: number, mood: typeof MOODS[0]) => {
     if (isLoadingMood) return; // chặn spam click
     setIsLoadingMood(true);
     setActiveMood(index);
-    setMoodMessage('');
+    setMoodMessage('');   //reset message cũ
 
     try {
-      // chỉ search nhạc, không gọi AI mood để tránh lỗi 500
-      await searchSongs(query);
+      // gọi AI với label mood
+      const result = await detectMood(mood.label);
+      
+      console.log('AI reuslt: ', result);
+
+      if(result) {
+        // hiện message động viên AI trả về
+        setMoodMessage(result.message);
+        // search nhạc bằng query AI đề xuất
+        await searchSongs(result.searchQuery);
+      } else {
+        // nếu AI lỗi thì fallback về query cứng như cũ
+        await searchSongs(mood.query);
+      }
     }  finally {
       setIsLoadingMood(false);
     }
@@ -178,7 +190,7 @@ export default function HomePage() {
             <div
               key={i}
               className={`chip ${activeMood === i ? 'active' : ''}`}
-              onClick={() => handleMoodClick(i, mood.query)}
+              onClick={() => handleMoodClick(i, mood)}
             >
               {mood.emoji} {mood.label}
             </div>
