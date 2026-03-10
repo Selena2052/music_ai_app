@@ -30,8 +30,6 @@ export class AiService {
       ),
     ) as any;
 
-    console.log('GROQ RESPONSE:', JSON.stringify(response.data, null, 2));
-
     return response.data.choices[0].message.content;
   }
 
