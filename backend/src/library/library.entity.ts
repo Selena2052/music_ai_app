@@ -23,7 +23,7 @@ export class Playlist {
     @Column({ name: 'is_public', default: false })
     isPublic: boolean;
 
-    @Column({ name: 'cover_image', length: 500, nullable: true })
+    @Column({ name: 'cover_image', length: ' text', nullable: true })
     coverImage: string;
 
     @CreateDateColumn({ name: 'created_at' })

@@ -169,6 +169,13 @@ export class LibraryService {
       })
     );
 
+    if (song.imageUrl) {
+    const playlist = await this.playlistRepo.findOne({ where: { id: playlistId } });
+    if (playlist && !playlist.coverImage) {
+      await this.playlistRepo.update({ id: playlistId }, { coverImage: song.imageUrl });
+    }
+  }
+
     return { ok: true };
   }
 
