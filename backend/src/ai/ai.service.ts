@@ -1,18 +1,26 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { firstValueFrom } from 'rxjs';
+import { ChatHistory, UserMood } from './ai.entity';
 
 @Injectable()
 export class AiService {
   constructor(
     private httpService: HttpService,
     private config: ConfigService,
+
+    @InjectRepository(ChatHistory)
+    private chatHistoryRepo: Repository<ChatHistory>,
+
+    @InjectRepository(UserMood)
+    private userMoodRepo: Repository<UserMood>,
   ) {}
 
-  private async callGemini(prompt: string): Promise<string> {
-    const apiKey = this.config.get('GEMINI_API_KEY');
-
+  private async callGroq(prompt: string): Promise<string> {
+    const apiKey = this.config.get('GEMINI_API_KEY'); 
     const response = await firstValueFrom(
       this.httpService.post(
         'https://api.groq.com/openai/v1/chat/completions',
@@ -25,15 +33,14 @@ export class AiService {
           headers: {
             Authorization: `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
+          },
         },
-        }
       ),
     ) as any;
-
     return response.data.choices[0].message.content;
   }
 
-  async detectMood(userMessage: string) {
+  async detectMood(userMessage: string, userId?: string) {
     const prompt = `
       Bạn là chuyên gia âm nhạc và tâm lý học.
       User vừa nói: "${userMessage}"
@@ -51,9 +58,22 @@ export class AiService {
       Chỉ trả về JSON, không giải thích thêm.
     `;
 
-    const result = await this.callGemini(prompt);
+    const result = await this.callGroq(prompt);
     const cleaned = result.replace(/```json|```/g, '').trim();
-    return JSON.parse(cleaned);
+    const parsed = JSON.parse(cleaned);
+
+    // Lưu mood vào DB nếu có userId
+    if (userId) {
+      await this.userMoodRepo.save(
+        this.userMoodRepo.create({
+          userId,
+          mood: parsed.mood,
+          contextText: userMessage,
+        })
+      );
+    }
+
+    return parsed;
   }
 
   async generateStory(title: string, artist: string) {
@@ -71,7 +91,7 @@ export class AiService {
       giọng văn cuốn hút như đang kể chuyện cho bạn bè nghe.
     `;
 
-    return { story: await this.callGemini(prompt) };
+    return { story: await this.callGroq(prompt) };
   }
 
   async explainLyrics(lyrics: string, title: string, artist: string) {
@@ -90,14 +110,10 @@ export class AiService {
       Viết bằng tiếng Việt, dễ hiểu, khoảng 100-150 từ.
     `;
 
-    return { explanation: await this.callGemini(prompt) };
+    return { explanation: await this.callGroq(prompt) };
   }
 
-  async getNextVibeTrack(
-    currentTitle: string,
-    currentArtist: string,
-    mood: string,
-  ) {
+  async getNextVibeTrack(currentTitle: string, currentArtist: string, mood: string) {
     const prompt = `
       User đang nghe "${currentTitle}" của "${currentArtist}".
       Mood hiện tại: ${mood}
@@ -116,14 +132,20 @@ export class AiService {
       Chỉ trả về JSON, không giải thích thêm.
     `;
 
-    const result = await this.callGemini(prompt);
+    const result = await this.callGroq(prompt);
     const cleaned = result.replace(/```json|```/g, '').trim();
     return JSON.parse(cleaned);
   }
 
-  async chat(message: string, history: { role: string; content: string }[]) {
+  // CHAT với lưu DB
+  async chat(
+    message: string,
+    history: { role: string; content: string }[],
+    userId?: string,
+  ) {
+    console.log('Chat userId:', userId);
     const historyText = history
-      .map((h) => `${h.role === 'user' ? 'User' : 'AI'}: ${h.content}`)
+      .map(h => `${h.role === 'user' ? 'User' : 'AI'}: ${h.content}`)
       .join('\n');
 
     const prompt = `
@@ -139,12 +161,41 @@ export class AiService {
       AI:
     `;
 
-    return { reply: await this.callGemini(prompt) };
+    const reply = await this.callGroq(prompt);
+
+    // Lưu cả 2 message vào DB
+    if (userId) {
+      await this.chatHistoryRepo.save([
+        this.chatHistoryRepo.create({ userId, role: 'user', content: message }),
+        this.chatHistoryRepo.create({ userId, role: 'ai', content: reply }),
+      ]);
+    }
+
+    return { reply };
+  }
+
+  // Lấy chat history từ DB 
+  async getChatHistory(userId: string) {
+    const history = await this.chatHistoryRepo.find({
+      where: { userId },
+      order: { createdAt: 'ASC' },
+      take: 50, // lấy 50 tin nhắn gần nhất
+    });
+
+    return history.map(h => ({
+      role: h.role as 'user' | 'ai',
+      content: h.content,
+    }));
+  }
+
+  async clearChatHistory(userId: string) {
+    await this.chatHistoryRepo.delete({ userId });
+    return { ok: true };
   }
 
   async analyzeUserTaste(listeningHistory: { title: string; artist: string }[]) {
     const historyText = listeningHistory
-      .map((s) => `${s.title} - ${s.artist}`)
+      .map(s => `${s.title} - ${s.artist}`)
       .join('\n');
 
     const prompt = `
@@ -164,7 +215,7 @@ export class AiService {
       Chỉ trả về JSON, không giải thích thêm.
     `;
 
-    const result = await this.callGemini(prompt);
+    const result = await this.callGroq(prompt);
     const cleaned = result.replace(/```json|```/g, '').trim();
     return JSON.parse(cleaned);
   }

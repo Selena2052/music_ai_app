@@ -35,6 +35,7 @@ interface AiState {
   sendChat: (message: string) => Promise<void>;
   analyzeTaste: (history: { title: string; artist: string }[]) => Promise<void>;
   clearChat: () => void;
+  loadChatHistory: () => Promise<void>; 
 }
 
 export const useAiStore = create<AiState>((set, get) => ({
@@ -144,5 +145,20 @@ export const useAiStore = create<AiState>((set, get) => ({
     }
   },
 
-  clearChat: () => set({ chatHistory: [] }),
+  clearChat: async () => {
+  set({ chatHistory: [] });
+  try {
+    await api.delete('/ai/chat/history');
+  } catch (err) {
+    console.error('clearChat failed:', err);
+  }
+},
+  loadChatHistory: async () => {
+  try {
+    const res = await api.get('/ai/chat/history');
+    set({ chatHistory: res.data });
+  } catch (err) {
+    console.error('loadChatHistory failed:', err);
+  }
+},
 }));

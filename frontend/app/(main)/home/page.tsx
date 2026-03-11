@@ -35,7 +35,7 @@ const THEMES = [
 export default function HomePage() {
   const { user } = useAuthStore();
   const { playSong, currentSong, isPlaying, fetchYoutubeId } = usePlayerStore();
-  const { searchResults, isSearching, searchSongs, isLiked, likeSong, unlikeSong, addToRecentlyPlayed } = useMusicStore();
+  const { searchResults, isSearching, searchSongs, isLiked, likeSong, unlikeSong, addToRecentlyPlayed, playlists, addSongToPlaylist } = useMusicStore();
   const { currentMood, detectMood } = useAiStore();
 
   const [activeMood, setActiveMood] = useState(0);
@@ -44,6 +44,7 @@ export default function HomePage() {
   const [activeTheme, setActiveTheme] = useState(THEMES[0]);
   const [moodMessage, setMoodMessage] = useState('');
   const [isLoadingMood, setIsLoadingMood] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{song: Song; x: number; y: number;} | null>(null);
 
   // random theme khi load trang
   useEffect(() => {
@@ -271,6 +272,18 @@ export default function HomePage() {
                     >
                       {liked ? '❤️' : '🤍'}
                     </button>
+
+                    <button
+                      className='song-like'
+                      style={{ opacity: 1, fontSize: '18px', color: 'var(--text2)' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setContextMenu({ song, x: e.clientX, y: e.clientY });
+                      }}
+                      title='Thêm vào Plauylist'
+                      >
+                        ...
+                    </button>
                   </div>
                 );
               })}
@@ -325,6 +338,78 @@ export default function HomePage() {
           </>
         )}
       </div>
+
+      {/* Context menu thêm vào playlist */}
+      {contextMenu && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 500 }}
+          onClick={() => setContextMenu(null)}
+        >
+          <div
+            style={{
+              position: 'fixed',
+              top: contextMenu.y,
+              left:  Math.min(contextMenu.x, window.innerWidth - 220),
+              background: 'var(--surface)',
+              border: '1px solid var(--border2)',
+              borderRadius: '12px',
+              padding: '6px',
+              minWidth: '200px',
+              zIndex: 501,
+              boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{
+              fontSize: '11px', fontWeight: 600, color: 'var(--text2)',
+              letterSpacing: '1px', textTransform: 'uppercase',
+              padding: '6px 10px 8px',
+            }}>
+              Thêm vào playlist
+            </div>
+
+            {playlists.length === 0 ? (
+              <div style={{ padding: '8px 10px', fontSize: '13px', color: 'var(--text2)' }}>
+                Chưa có playlist nào
+              </div>
+            ) : (
+              playlists.map(pl => (
+                <div
+                  key={pl.id}
+                  onClick={() => { addSongToPlaylist(pl.id, contextMenu.song); setContextMenu(null); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '8px 10px', borderRadius: '8px',
+                    cursor: 'pointer', transition: 'background 0.15s', fontSize: '13px',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface2)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <div style={{
+                    width: '32px', height: '32px', borderRadius: '6px',
+                    background: 'var(--surface2)', overflow: 'hidden',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '14px', flexShrink: 0,
+                  }}>
+                    {pl.image_url
+                      ? <img src={pl.image_url} alt={pl.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : '🎵'}
+                  </div>
+                  <div style={{ overflow: 'hidden' }}>
+                    <div style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {pl.name}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '1px' }}>
+                      {pl.song?.length || 0} bài
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -7,11 +7,12 @@ import Sidebar from '@/components/layout/Sidebar';
 import PlayerBar from '@/components/player/PlayerBar';
 import NowPlaying from '@/components/player/NowPlaying';
 import dynamic from 'next/dynamic';
+import { useMusicStore } from '@/stores/musicStore';
 
 const AudioPlayer = dynamic(
-        () => import('@/components/player/AudioPlayer'),
-        { ssr: false } // chỉ chạy trên browser, không chạy trên server
-    );
+    () => import('@/components/player/AudioPlayer'),
+    { ssr: false } // chỉ chạy trên browser, không chạy trên server
+);
 
 export default function MainLayout({
     children,
@@ -20,8 +21,14 @@ export default function MainLayout({
 }) {
     const router = useRouter();
     const { isAuthenticated } = useAuthStore();
+    const { loadLibrary } = useMusicStore();
     const [hydrated, setHydrated] = useState(false);
 
+    useEffect(() => {
+        if (isAuthenticated) {
+            loadLibrary();
+        }
+    }, [isAuthenticated]);
 
     // đợi localStorage load xong mới check auth
     useEffect(() => {

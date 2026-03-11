@@ -6,6 +6,7 @@ import { MusicModule } from './music/music.module';
 import { AiModule } from './ai/ai.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { config } from 'process';
+import { LibraryModule } from './library/library.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { config } from 'process';
     AuthModule,
     MusicModule,
     AiModule,
+    LibraryModule,
   ],
 })
 export class AppModule {}

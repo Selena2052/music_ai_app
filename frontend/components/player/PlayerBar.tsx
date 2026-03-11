@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { usePlayerStore } from '@/stores/playerStore';
 import { useMusicStore } from '@/stores/musicStore';
 import {
@@ -28,8 +29,9 @@ export default function PlayerBar() {
     toggleNowPlaying,
   } = usePlayerStore();
 
-  const { isLiked, likeSong, unlikeSong } = useMusicStore();
+  const { isLiked, likeSong, unlikeSong, playlists, addSongToPlaylist } = useMusicStore();
   const { currentMood } = useAiStore();
+  const [showPlaylistMenu, setShowPlaylistMenu] = useState(false);
 
   // nếu không có bài đang phát → ẩn player
   if (!currentSong) return null;
@@ -82,6 +84,84 @@ export default function PlayerBar() {
         >
           {liked ? '❤️' : '🤍'}
         </button>
+
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowPlaylistMenu(!showPlaylistMenu)}
+            style={{
+              background: 'none', border: 'none', color: 'var(--text2)',
+              cursor: 'pointer', fontSize: '18px', padding: '4px 6px',
+              transition: 'color 0.2s',
+            }}
+            title="Thêm vào playlist"
+          >
+            ⋯
+          </button>
+
+          {showPlaylistMenu && (
+            <>
+              <div
+                style={{ position: 'fixed', inset: 0, zIndex: 500 }}
+                onClick={() => setShowPlaylistMenu(false)}
+              />
+              <div style={{
+                position: 'absolute', bottom: '40px', left: '0',
+                background: 'var(--surface)',
+                border: '1px solid var(--border2)',
+                borderRadius: '12px', padding: '6px',
+                minWidth: '200px', zIndex: 501,
+                boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+              }}>
+                <div style={{
+                  fontSize: '11px', fontWeight: 600, color: 'var(--text2)',
+                  letterSpacing: '1px', textTransform: 'uppercase',
+                  padding: '6px 10px 8px',
+                }}>
+                  Thêm vào playlist
+                </div>
+                {playlists.length === 0 ? (
+                  <div style={{ padding: '8px 10px', fontSize: '13px', color: 'var(--text2)' }}>
+                    Chưa có playlist nào
+                  </div>
+                ) : (
+                  playlists.map(pl => (
+                    <div
+                      key={pl.id}
+                      onClick={() => { addSongToPlaylist(pl.id, currentSong); setShowPlaylistMenu(false); }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '8px 10px', borderRadius: '8px',
+                        cursor: 'pointer', transition: 'background 0.15s', fontSize: '13px',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface2)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <div style={{
+                        width: '32px', height: '32px', borderRadius: '6px',
+                        background: 'var(--surface2)', overflow: 'hidden',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '14px', flexShrink: 0,
+                      }}>
+                        {pl.image_url
+                          ? <img src={pl.image_url} alt={pl.name}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : '🎵'}
+                      </div>
+                      <div style={{ overflow: 'hidden' }}>
+                        <div style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {pl.name}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '1px' }}>
+                          {pl.song?.length || 0} bài
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* GIỮA: controls + progress */}

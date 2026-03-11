@@ -17,7 +17,7 @@ const QUICK_PROMPTS = [
 
 export default function ChatPage() {
 
-    const { chatHistory, isTyping, sendChat, clearChat } = useAiStore();
+    const { chatHistory, isTyping, sendChat, clearChat, loadChatHistory } = useAiStore();
 
     const { currentSong } = usePlayerStore();
 
@@ -26,6 +26,10 @@ export default function ChatPage() {
     const bottomRef = useRef<HTMLDivElement>(null);
 
     const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        loadChatHistory();
+    }, []);
 
     useEffect(() => {
         const handleGlobalKey = (e: KeyboardEvent) => {

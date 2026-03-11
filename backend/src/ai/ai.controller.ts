@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body, UseGuards, Request } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AiService } from './ai.service';
 
@@ -8,8 +8,8 @@ export class AiController {
   constructor(private aiService: AiService) {}
 
   @Post('mood')
-  detectMood(@Body('message') message: string) {
-    return this.aiService.detectMood(message);
+  detectMood(@Request() req, @Body('message') message: string) {
+    return this.aiService.detectMood(message, req.user.userId);
   }
 
   @Post('story')
@@ -40,16 +40,25 @@ export class AiController {
 
   @Post('chat')
   chat(
+    @Request() req,
     @Body('message') message: string,
     @Body('history') history: { role: string; content: string }[],
   ) {
-    return this.aiService.chat(message, history || []);
+    return this.aiService.chat(message, history || [], req.user.userId);
+  }
+
+  @Get('chat/history')
+  getChatHistory(@Request() req) {
+    return this.aiService.getChatHistory(req.user.userId);
+  }
+
+  @Delete('chat/history')
+  clearChatHistory(@Request() req) {
+    return this.aiService.clearChatHistory(req.user.userId);
   }
 
   @Post('analyze-taste')
-  analyzeUserTaste(
-    @Body('history') history: { title: string; artist: string }[],
-  ) {
+  analyzeUserTaste(@Body('history') history: { title: string; artist: string }[]) {
     return this.aiService.analyzeUserTaste(history);
   }
 }
