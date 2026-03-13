@@ -39,3 +39,41 @@ export class UserMood {
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }
+
+// Story
+@Entity('song_stories')
+export class SongStory {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ name: 'song_id', nullable: true })
+  songId: string;
+
+  @Column({ name: 'story_text', type: 'text' })
+  storyText: string;
+
+  @CreateDateColumn({ name: 'generated_at' })
+  generatedAt: Date;
+}
+
+//Lyrics
+@Entity('lyrics_explanations')
+export class LyricsExplanation {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ name: 'song_id', nullable: true })
+  songId: string;
+
+  @Column({ name: 'line_index', nullable: true })
+  lineIndex: number;
+
+  @Column({ name: 'line_text', type: 'text', nullable: true })
+  lineText: string;
+
+  @Column({ type: 'text', nullable: true })
+  explanation: string;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+}

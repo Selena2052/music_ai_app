@@ -168,7 +168,12 @@ export default function PlayerBar() {
       <div className="pb-center">
         <div className="pb-btns">
           {/* shuffle */}
-          <button className="pb-ctrl" onClick={toggleShuffle} title="Shuffle">
+          <button
+            className="pb-ctrl"
+            onClick={toggleShuffle}
+            title="Shuffle"
+            style={{ color: isShuffled ? 'var(--accent2)' : undefined }}
+          >
             <Shuffle size={16} />
           </button>
 
@@ -188,10 +193,14 @@ export default function PlayerBar() {
           </button>
 
           {/* repeat */}
-          <button className="pb-ctrl" onClick={toggleRepeat} title="Lặp lại">
+          <button
+            className="pb-ctrl"
+            onClick={toggleRepeat}
+            title="Lặp lại"
+            style={{ color: repeatMode !== 'none' ? 'var(--accent2)' : undefined }}
+          >
             {repeatMode === 'one' ? <Repeat1 size={16} /> : <Repeat size={16} />}
           </button>
-        </div>
 
         {/* progress bar */}
         <div className="pb-progress">

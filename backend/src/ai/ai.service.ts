@@ -4,7 +4,14 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { firstValueFrom } from 'rxjs';
-import { ChatHistory, UserMood } from './ai.entity';
+import {
+  ChatHistory,
+  UserMood,
+  SongStory,
+  LyricsExplanation,
+} from './ai.entity';
+import { UserTasteProfile } from '../users/user-taste.entity';
+import { Song } from '../music/song.entity';
 
 @Injectable()
 export class AiService {
@@ -17,11 +24,23 @@ export class AiService {
 
     @InjectRepository(UserMood)
     private userMoodRepo: Repository<UserMood>,
+
+    @InjectRepository(SongStory)
+    private songStoryRepo: Repository<SongStory>,
+
+    @InjectRepository(LyricsExplanation)
+    private lyricsExplanationRepo: Repository<LyricsExplanation>,
+
+    @InjectRepository(UserTasteProfile)
+    private userTasteRepo: Repository<UserTasteProfile>,
+
+    @InjectRepository(Song)
+    private songRepo: Repository<Song>,
   ) {}
 
   private async callGroq(prompt: string): Promise<string> {
-    const apiKey = this.config.get('GROQ_API_KEY'); 
-    const response = await firstValueFrom(
+    const apiKey = this.config.get('GROQ_API_KEY') ?? '';
+    const response = (await firstValueFrom(
       this.httpService.post(
         'https://api.groq.com/openai/v1/chat/completions',
         {
@@ -36,8 +55,14 @@ export class AiService {
           },
         },
       ),
-    ) as any;
+    )) as any;
     return response.data.choices[0].message.content;
+  }
+
+  private async getSongId(spotifyId: string): Promise<string | null> {
+    if (!spotifyId) return null;
+    const song = await this.songRepo.findOne({ where: { spotifyId } });
+    return song?.id ?? null;
   }
 
   async detectMood(userMessage: string, userId?: string) {
@@ -69,51 +94,57 @@ export class AiService {
           userId,
           mood: parsed.mood,
           contextText: userMessage,
-        })
+        }),
       );
     }
 
     return parsed;
   }
 
-  async generateStory(title: string, artist: string) {
-    const prompt = `
-      Bạn là người kể chuyện âm nhạc đầy cảm hứng.
-      Hãy kể câu chuyện thú vị về bài hát "${title}" của "${artist}".
-      
-      Bao gồm:
-      - Hoàn cảnh ra đời của bài hát
-      - Ý nghĩa sâu xa của lời nhạc
-      - Tác động của bài hát đến người nghe và văn hóa
-      - Một sự thật thú vị ít người biết
-      
-      Viết bằng tiếng Việt, khoảng 150-200 từ, 
-      giọng văn cuốn hút như đang kể chuyện cho bạn bè nghe.
-    `;
+  async generateStory(title: string, artist: string, spotifyId?: string) {
+    // Check cache
+    if (spotifyId) {
+      const songId = await this.getSongId(spotifyId);
+      if (songId) {
+        const cached = await this.songStoryRepo.findOne({ where: { songId } });
+        if (cached) return { story: cached.storyText, fromCache: true };
+      }
+    }
 
-    return { story: await this.callGroq(prompt) };
+    // Gọi Groq
+    const prompt = `
+    Bạn là người kể chuyện âm nhạc đầy cảm hứng.
+    Hãy kể câu chuyện thú vị về bài hát "${title}" của "${artist}".
+    
+    Bao gồm:
+    - Hoàn cảnh ra đời của bài hát
+    - Ý nghĩa sâu xa của lời nhạc
+    - Tác động của bài hát đến người nghe và văn hóa
+    - Một sự thật thú vị ít người biết
+    
+    Viết bằng tiếng Việt, khoảng 150-200 từ, 
+    giọng văn cuốn hút như đang kể chuyện cho bạn bè nghe.
+  `;
+    const story = await this.callGroq(prompt);
+
+    // Lưu DB
+    if (spotifyId) {
+      const songId = await this.getSongId(spotifyId);
+      if (songId) {
+        await this.songStoryRepo.save(
+          this.songStoryRepo.create({ songId, storyText: story }),
+        );
+      }
+    }
+
+    return { story, fromCache: false };
   }
 
-  async explainLyrics(lyrics: string, title: string, artist: string) {
-    const prompt = `
-      Bạn là chuyên gia phân tích âm nhạc.
-      Đây là đoạn lyrics từ bài "${title}" của "${artist}":
-      
-      "${lyrics}"
-      
-      Hãy giải thích:
-      - Ý nghĩa literal (nghĩa đen)
-      - Ý nghĩa ẩn dụ (nghĩa bóng)
-      - Cảm xúc mà tác giả muốn truyền đạt
-      - Liên hệ với hoàn cảnh thực tế của tác giả
-      
-      Viết bằng tiếng Việt, dễ hiểu, khoảng 100-150 từ.
-    `;
-
-    return { explanation: await this.callGroq(prompt) };
-  }
-
-  async getNextVibeTrack(currentTitle: string, currentArtist: string, mood: string) {
+  async getNextVibeTrack(
+    currentTitle: string,
+    currentArtist: string,
+    mood: string,
+  ) {
     const prompt = `
       User đang nghe "${currentTitle}" của "${currentArtist}".
       Mood hiện tại: ${mood}
@@ -145,7 +176,7 @@ export class AiService {
   ) {
     console.log('Chat userId:', userId);
     const historyText = history
-      .map(h => `${h.role === 'user' ? 'User' : 'AI'}: ${h.content}`)
+      .map((h) => `${h.role === 'user' ? 'User' : 'AI'}: ${h.content}`)
       .join('\n');
 
     const prompt = `
@@ -174,7 +205,7 @@ export class AiService {
     return { reply };
   }
 
-  // Lấy chat history từ DB 
+  // Lấy chat history từ DB
   async getChatHistory(userId: string) {
     const history = await this.chatHistoryRepo.find({
       where: { userId },
@@ -182,7 +213,7 @@ export class AiService {
       take: 50, // lấy 50 tin nhắn gần nhất
     });
 
-    return history.map(h => ({
+    return history.map((h) => ({
       role: h.role as 'user' | 'ai',
       content: h.content,
     }));
@@ -193,30 +224,79 @@ export class AiService {
     return { ok: true };
   }
 
-  async analyzeUserTaste(listeningHistory: { title: string; artist: string }[]) {
-    const historyText = listeningHistory
-      .map(s => `${s.title} - ${s.artist}`)
-      .join('\n');
-
-    const prompt = `
-      Dựa vào lịch sử nghe nhạc này:
-      ${historyText}
-      
-      Hãy phân tích gu âm nhạc và trả về JSON:
-      {
-        "favoriteGenres": ["genre1", "genre2"],
-        "favoriteEras": ["thập niên hoặc năm"],
-        "moodPattern": "mô tả ngắn về xu hướng mood",
-        "recommendedArtists": ["artist1", "artist2", "artist3"],
-        "personalityInsight": "nhận xét thú vị về tính cách qua nhạc",
-        "nextRecommendations": ["search query 1", "search query 2", "search query 3"]
-      }
-      
-      Chỉ trả về JSON, không giải thích thêm.
-    `;
-
-    const result = await this.callGroq(prompt);
+  async analyzeUserTaste(
+    listeningHistory: { title: string; artist: string }[],
+    userId?: string,
+  ) {
+    const result = await this.callGroq(prompt());
     const cleaned = result.replace(/```json|```/g, '').trim();
-    return JSON.parse(cleaned);
+    const parsed = JSON.parse(cleaned);
+
+    if (userId) {
+      const existing = await this.userTasteRepo.findOne({ where: { userId } });
+      if (existing) {
+        await this.userTasteRepo.update(existing.id, {
+          favoriteGenres: parsed.favoriteGenres,
+          favoriteArtists: parsed.recommendedArtists,
+          moodPatterns: { pattern: parsed.moodPattern },
+        });
+      } else {
+        await this.userTasteRepo.save(
+          this.userTasteRepo.create({
+            userId,
+            favoriteGenres: parsed.favoriteGenres,
+            favoriteArtists: parsed.recommendedArtists,
+            moodPatterns: { pattern: parsed.moodPattern },
+          }),
+        );
+      }
+    }
+
+    return parsed;
+  }
+
+  async explainLyrics(lyrics: string, title: string, artist: string, spotifyId?: string) {
+  if (spotifyId) {
+    const songId = await this.getSongId(spotifyId);
+    if (songId) {
+      const cached = await this.lyricsExplanationRepo.findOne({ where: { songId } });
+      if (cached) return { explanation: cached.explanation, fromCache: true };
+    }
+  }
+
+  const prompt = `
+    Bạn là chuyên gia phân tích âm nhạc.
+    Đây là đoạn lyrics từ bài "${title}" của "${artist}":
+    "${lyrics}"
+    
+    Hãy giải thích:
+    - Ý nghĩa literal (nghĩa đen)
+    - Ý nghĩa ẩn dụ (nghĩa bóng)
+    - Cảm xúc mà tác giả muốn truyền đạt
+    
+    Viết bằng tiếng Việt, dễ hiểu, khoảng 100-150 từ.
+  `;
+  const explanation = await this.callGroq(prompt);
+
+  if (spotifyId) {
+    const songId = await this.getSongId(spotifyId);
+    if (songId) {
+      await this.lyricsExplanationRepo.save(
+        this.lyricsExplanationRepo.create({ songId, explanation })
+      );
+    }
+  }
+
+  return { explanation, fromCache: false };
+}
+
+  async getTasteProfile(userId: string) {
+    const profile = await this.userTasteRepo.findOne({ where: { userId } });
+    if (!profile) return null;
+    return {
+      favoriteGenres: profile.favoriteGenres,
+      recommendedArtists: profile.favoriteArtists,
+      moodPattern: (profile.moodPatterns as any)?.pattern ?? '',
+    };
   }
 }

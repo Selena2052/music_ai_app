@@ -188,15 +188,17 @@ export default function AudioPlayer() {
 
   // update progress YouTube
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (getSource() !== 'youtube' || !ytPlayerRef.current) return;
-      if (ytPlayerRef.current.getPlayerState?.() === 1) {
-        setCurrentTime(ytPlayerRef.current.getCurrentTime() * 1000);
-        setDuration(ytPlayerRef.current.getDuration() * 1000);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
+  const interval = setInterval(() => {
+    if (!ytPlayerRef.current) return;
+    const { currentSong } = usePlayerStore.getState();
+    if (!currentSong?.youtubeId) return;
+    if (ytPlayerRef.current.getPlayerState?.() === 1) {
+      setCurrentTime(ytPlayerRef.current.getCurrentTime() * 1000);
+      setDuration(ytPlayerRef.current.getDuration() * 1000);
+    }
+  }, 1000);
+  return () => clearInterval(interval);
+}, []);
 
   // không render gì vào React tree
   return null;
