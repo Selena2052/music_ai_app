@@ -36,7 +36,7 @@ export default function HomePage() {
   const { user } = useAuthStore();
   const { playSong, currentSong, isPlaying, fetchYoutubeId } = usePlayerStore();
   const { searchResults, isSearching, searchSongs, isLiked, likeSong, unlikeSong, addToRecentlyPlayed, playlists, addSongToPlaylist } = useMusicStore();
-  const { currentMood, detectMood } = useAiStore();
+  const { currentMood, detectMood, generateStory, isGeneratingStory } = useAiStore();
 
   const [activeMood, setActiveMood] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -296,7 +296,13 @@ export default function HomePage() {
               <>
                 <div className="sec-title">✦ AI Story Mode</div>
                 <div className="story-card">
-                  <button className="story-btn">Xem Story</button>
+                  <button 
+                    className="story-btn"
+                    onClick={() => currentSong && generateStory(currentSong.title, currentSong.artist)}
+                    disabled = {isGeneratingStory}
+                  >
+                    {isGeneratingStory ? '✨ Đang tạo...' : 'Xem Story'}
+                  </button>
                   <div className="story-badge">✦ ĐANG PHÁT</div>
                   <div className="story-title">{currentSong.title}</div>
                   <div className="story-sub">Câu chuyện đằng sau bài hát bạn đang nghe</div>

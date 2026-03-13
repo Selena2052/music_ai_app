@@ -18,11 +18,6 @@ interface PlayerState {
   isFetchingYoutube: boolean;
   fetchYoutubeId: (song: Song) => Promise<string | null>;
 
-  // Spotify
-  spotifyToken: string | null;
-  spotifyDeviceId: string | null;
-  spotifyReady: boolean;
-
   // actions
   playSong: (song: Song, queue?: Song[]) => void;
   pauseSong: () => void;
@@ -36,10 +31,6 @@ interface PlayerState {
   toggleRepeat: () => void;
   toggleNowPlaying: () => void;
   addToQueue: (song: Song) => void;
-  setSpotifyToken: (token: string) => void;
-  setSpotifyDeviceId: (id: string) => void;
-  setSpotifyReady: (ready: boolean) => void;
-  clearSpotifyToken: () => void;
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -54,9 +45,6 @@ export const usePlayerStore = create<PlayerState>()(
       currentTime: 0,
       duration: 0,
       isNowPlayingOpen: false,
-      spotifyToken: null,
-      spotifyDeviceId: null,
-      spotifyReady: false,
 
       isFetchingYoutube: false,
 
@@ -103,10 +91,6 @@ export const usePlayerStore = create<PlayerState>()(
       })),
       toggleNowPlaying: () => set(s => ({ isNowPlayingOpen: !s.isNowPlayingOpen })),
       addToQueue: (song) => set(s => ({ queue: [...s.queue, song] })),
-      setSpotifyToken: (token) => set({ spotifyToken: token }),
-      setSpotifyDeviceId: (id) => set({ spotifyDeviceId: id }),
-      setSpotifyReady: (ready) => set({ spotifyReady: ready }),
-      clearSpotifyToken: () => set({ spotifyToken: null, spotifyDeviceId: null, spotifyReady: false }),
 
       fetchYoutubeId: async (song) => {
         // Đã có rồi thì dùng luôn
@@ -142,8 +126,6 @@ export const usePlayerStore = create<PlayerState>()(
         volume: state.volume,
         isShuffled: state.isShuffled,
         repeatMode: state.repeatMode,
-        // lưu spotify token để không cần login lại
-        spotifyToken: state.spotifyToken,
       }),
     }
   )

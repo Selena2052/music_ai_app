@@ -20,7 +20,7 @@ export class AiService {
   ) {}
 
   private async callGroq(prompt: string): Promise<string> {
-    const apiKey = this.config.get('GEMINI_API_KEY'); 
+    const apiKey = this.config.get('GROQ_API_KEY'); 
     const response = await firstValueFrom(
       this.httpService.post(
         'https://api.groq.com/openai/v1/chat/completions',
