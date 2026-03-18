@@ -29,8 +29,8 @@ interface AiState {
 
   // actions
   detectMood: (message: string) => Promise<MoodResult | null>;
-  generateStory: (title: string, artist: string) => Promise<void>;
-  explainLyrics: (lyrics: string, title: string, artist: string) => Promise<void>;
+  generateStory: (title: string, artist: string, spotifyId?: string) => Promise<void>;
+  explainLyrics: (lyrics: string, title: string, artist: string, spotifyId?: string) => Promise<void>;
   getNextVibe: (title: string, artist: string, mood: string) => Promise<void>;
   sendChat: (message: string) => Promise<void>;
   analyzeTaste: (history: { title: string; artist: string }[]) => Promise<void>;
@@ -66,10 +66,10 @@ export const useAiStore = create<AiState>((set, get) => ({
     }
   },
 
-  generateStory: async (title, artist) => {
+  generateStory: async (title, artist, spotifyId?: string) => {
     set({ isGeneratingStory: true, currentStory: null });
     try {
-      const response = await api.post('/ai/story', { title, artist });
+      const response = await api.post('/ai/story', { title, artist, spotifyId });
       set({ currentStory: response.data, isGeneratingStory: false });
     } catch (error) {
       console.error('Story generation failed:', error);
@@ -77,10 +77,10 @@ export const useAiStore = create<AiState>((set, get) => ({
     }
   },
 
-  explainLyrics: async (lyrics, title, artist) => {
+  explainLyrics: async (lyrics, title, artist, spotifyId?: string) => {
     set({ isExplaining: true, currentExplanation: null });
     try {
-      const response = await api.post('/ai/explain-lyrics', { lyrics, title, artist });
+      const response = await api.post('/ai/explain-lyrics', { lyrics, title, artist, spotifyId });
       set({ currentExplanation: response.data, isExplaining: false });
     } catch (error) {
       console.error('Lyrics explanation failed:', error);

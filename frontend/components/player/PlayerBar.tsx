@@ -201,7 +201,7 @@ export default function PlayerBar() {
           >
             {repeatMode === 'one' ? <Repeat1 size={16} /> : <Repeat size={16} />}
           </button>
-
+          </div>
         {/* progress bar */}
         <div className="pb-progress">
           <span>{formatTime(currentTime)}</span>

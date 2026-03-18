@@ -299,4 +299,29 @@ export class AiService {
       moodPattern: (profile.moodPatterns as any)?.pattern ?? '',
     };
   }
+
+  async getMoodStats(userId: string) {
+    const moods = await this.userMoodRepo.find({
+      where: {userId},
+      order: {createdAt: 'DESC'},
+      take: 100,
+    });
+
+    if (!moods.length) return [];
+
+    // Đếm số lần xuất hiện mood 
+    const moodMap: Record<string, number> = {};
+    moods.forEach(m => {
+      moodMap[m.mood] = (moodMap[m.mood] || 0) + 1;
+    });
+    
+    const total = moods.length;
+    return Object.entries(moodMap)
+      .sort((a, b) => b[1] = a[1])
+      .slice(0, 4)
+      .map(([mood, count]) => ({
+        mood,
+        pct: Math.round((count / total) * 100),
+      }));
+  }
 }

@@ -72,13 +72,13 @@ export default function NowPlaying() {
 
     const handleGenerateStory = () => {
         setActivePanel('story');
-        generateStory(currentSong.title, currentSong.artist);
+        generateStory(currentSong.title, currentSong.artist, currentSong.spotifyId);
     };
 
     const handleExplainLyrics = () => {
         setActivePanel('explain');
         const allLyrics = lyrics.map((l) => l.text).join('\n');
-        explainLyrics(allLyrics, currentSong.title, currentSong.artist);
+        explainLyrics(allLyrics, currentSong.title, currentSong.artist, currentSong.spotifyId);
     };
 
     const handleGetVibe = () => {

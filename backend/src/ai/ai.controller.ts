@@ -16,8 +16,10 @@ export class AiController {
   generateStory(
     @Body('title') title: string,
     @Body('artist') artist: string,
+    @Body('spotifyId') spotifyId?: string,
+
   ) {
-    return this.aiService.generateStory(title, artist);
+    return this.aiService.generateStory(title, artist, spotifyId);
   }
 
   @Post('explain-lyrics')
@@ -25,8 +27,9 @@ export class AiController {
     @Body('lyrics') lyrics: string,
     @Body('title') title: string,
     @Body('artist') artist: string,
+    @Body('spotifyId') spotifyId?: string,
   ) {
-    return this.aiService.explainLyrics(lyrics, title, artist);
+    return this.aiService.explainLyrics(lyrics, title, artist, spotifyId);
   }
 
   @Post('vibe-next')
@@ -58,7 +61,20 @@ export class AiController {
   }
 
   @Post('analyze-taste')
-  analyzeUserTaste(@Body('history') history: { title: string; artist: string }[]) {
-    return this.aiService.analyzeUserTaste(history);
+  analyzeUserTaste(
+    @Request() req,
+    @Body('history') history: { title: string; artist: string }[]
+  ) {
+    return this.aiService.analyzeUserTaste(history, req.user.userId);
+  }
+
+  @Get('taste-profile')
+  getTasteProfile(@Request() req) {
+    return this.aiService.getTasteProfile(req.user.userId);
+  }
+
+  @Get('mood-stats')
+  getMoodStats(@Request() req) {
+    return this.aiService.getMoodStats(req.user.userId);
   }
 }

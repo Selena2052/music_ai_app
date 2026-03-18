@@ -76,4 +76,14 @@ export class LibraryController {
   addToHistory(@Request() req, @Body() songData: any) {
     return this.libraryService.addToHistory(req.user.userId, songData);
   }
+
+  @Get('stats')
+  getStats(@Request() req) {
+    return this.libraryService.getStats(req.user.userId);
+  }
+
+  @Get('top-artists')
+  getTopArtists(@Request() req) {
+    return this.libraryService.getTopArtists(req.user.userId);
+  }
 }

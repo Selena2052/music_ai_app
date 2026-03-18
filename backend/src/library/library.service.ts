@@ -223,4 +223,33 @@ export class LibraryService {
       youtubeId: song.youtubeId,
     };
   }
+
+  async getStats(userId: string) {
+    const totalSongs = await this.historyRepo.count({ where: {userId} });
+    const totalLiked = await this.likedSongRepo.count({ where: {userId} });
+    const totalPlaylist = await this.playlistRepo.count({ where: {userId} });
+
+    return { totalSongs, totalLiked, totalPlaylist};
+  }
+
+  async getTopArtists(userId: string) {
+    const history = await this.historyRepo.find({
+      where: {userId},
+      relations: ['song'],
+      order: {listenedAt: 'DESC'},
+      take: 200,
+    });
+
+    const artistMap: Record<string, number> = {};
+    history.forEach(h => {
+      if (h.song?.artist) {
+        artistMap[h.song.artist] = (artistMap[h.song.artist] || 0) + 1;
+      }
+    });
+
+    return Object.entries(artistMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([artist, count]) => ({artist, count}));
+  }
 }

@@ -22,4 +22,11 @@ export class UsersService {
     const user = this.usersRepository.create(data);
     return this.usersRepository.save(user);
   }
+
+  async updateProfile(userId: string, data: { username?: string; avatar?: string }) {
+  await this.usersRepository.update(userId, {
+    ...(data.username && { username: data.username }),
+    ...(data.avatar !== undefined && { avatar: data.avatar }),
+  });
+}
 }
