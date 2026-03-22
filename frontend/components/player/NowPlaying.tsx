@@ -7,7 +7,7 @@ import {
     X, Play, Pause, SkipBack, SkipForward,
     Shuffle, Repeat, Repeat1, Sparkles, BookOpen, Lightbulb, Zap
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function NowPlaying() {
     const {
@@ -45,18 +45,23 @@ export default function NowPlaying() {
 
     // tab đang active ở panel phải
     const [activePanel, setActivePanel] = useState<'lyrics' | 'story' | 'explain' | 'vibe'>('lyrics');
+    const [lyrics, setLyrics] = useState<string>('');
+    const [isLoadingLyrics, setIsLoadingLyrics] = useState(false);
 
-    // lyrics giả lập (sau này lấy từ API)
-    const [lyrics] = useState([
-        { id: 1, text: "I'm in love with the shape of you", active: false },
-        { id: 2, text: "We push and pull like a magnet do", active: false },
-        { id: 3, text: "Although my heart is falling too", active: true },
-        { id: 4, text: "I'm in love with your body", active: false },
-        { id: 5, text: "And last night you were in my room", active: false },
-        { id: 6, text: "And now my bedsheets smell like you", active: false },
-        { id: 7, text: "Every day discovering something brand new", active: false },
-        { id: 8, text: "I'm in love with your body", active: false },
-    ]);
+    useEffect(() => {
+        if (!currentSong) return;
+        setLyrics('');
+        setIsLoadingLyrics(true);
+        // api
+        fetch(`https://api.lyrics.ovh/v1/${encodeURIComponent(currentSong.artist)}/${encodeURIComponent(currentSong.title)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.lyrics) setLyrics(data.lyrics);
+                else setLyrics('');
+            })
+            .catch(() => setLyrics(''))
+            .finally(() => setIsLoadingLyrics(false));
+    }, [currentSong?.spotifyId]);
 
     if (!isNowPlayingOpen || !currentSong) return null;
 
@@ -77,8 +82,7 @@ export default function NowPlaying() {
 
     const handleExplainLyrics = () => {
         setActivePanel('explain');
-        const allLyrics = lyrics.map((l) => l.text).join('\n');
-        explainLyrics(allLyrics, currentSong.title, currentSong.artist, currentSong.spotifyId);
+        explainLyrics(lyrics, currentSong.title, currentSong.artist, currentSong.spotifyId);
     };
 
     const handleGetVibe = () => {
@@ -214,14 +218,23 @@ export default function NowPlaying() {
                                     <BookOpen size={12} style={{ display: 'inline', marginRight: '6px' }} />
                                     LỜI BÀI HÁT
                                 </div>
-                                {lyrics.map((line) => (
-                                    <div
-                                        key={line.id}
-                                        className={`lyric-line ${line.active ? 'active' : ''}`}
-                                    >
-                                        {line.text}
+                                {isLoadingLyrics ? (
+                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', textAlign: 'center', marginTop: '40px' }}>
+                                        🎵 Đang tải lyrics...
                                     </div>
-                                ))}
+                                ) : lyrics ? (
+                                    <div style={{ fontSize: '14px', lineHeight: '1.9', color: 'rgba(255,255,255,0.85)', whiteSpace: 'pre-line' }}>
+                                        {lyrics}
+                                    </div>
+                                ) : (
+                                    <div style={{ textAlign: 'center', padding: '40px 0', color: 'rgba(255,255,255,0.4)', fontSize: '14px' }}>
+                                        <div style={{ fontSize: '32px', marginBottom: '12px', opacity: 0.3 }}>🎵</div>
+                                        <p>Không tìm thấy lyrics</p>
+                                        <p style={{ fontSize: '12px', marginTop: '6px', opacity: 0.7 }}>
+                                            Thử Story Mode hoặc Giải thích lyrics AI nhé!
+                                        </p>
+                                    </div>
+                                )}
                             </>
                         )}
 
