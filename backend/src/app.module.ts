@@ -16,13 +16,18 @@ import { LibraryModule } from './library/library.module';
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        store: 'ioredis',
-        host: config.get('REDIS_HOST') || 'localhost',
-        port: +(config.get('REDIS_PORT') || 6379),
-        ttl: 60 * 60 * 24, // ytid không đổi 24h
-        max: 10000,   // max 10k entries trong ram
-      }),
+      useFactory: (config: ConfigService) => {
+        const redisPassword = config.get('REDIS_PASSWORD');
+        return {
+          store: 'ioredis',
+          host: config.get('REDIS_HOST') || 'localhost',
+          port: +(config.get('REDIS_PORT') || 6379),
+          password: redisPassword || undefined,
+          tls: redisPassword ? {} : undefined,
+          ttl: 60 * 60 * 24,
+          max: 10000,
+        };
+      },
       inject: [ConfigService],
     }),
 
@@ -35,6 +40,7 @@ import { LibraryModule } from './library/library.module';
         username: config.get('DB_USERNAME'),
         password: config.get('DB_PASSWORD'),
         database: config.get('DB_NAME'),
+        ssl: { rejectUnauthorized: false },
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: false,
         logging: false,
