@@ -13,7 +13,7 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'http://localhost:3002',
-      'https://music-ai-frontend-nine.vercel.app',
+      'https://chillwithmusic.vercel.app',
     ],
     credentials: true,
   });
