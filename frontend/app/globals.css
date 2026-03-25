@@ -1536,4 +1536,27 @@ nextjs-portal { display: none; }
     padding: 0 14px;
     height: auto;
   }
+
+  .song-row {
+    grid-template-columns: 44px 1fr auto 36px !important;
+  }
+
+  .song-info .title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .song-info .artist {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .song-dur {
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .rec-grid { grid-template-columns: repeat(2, 1fr) !important; }
 }
