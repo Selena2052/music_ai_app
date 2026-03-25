@@ -1427,3 +1427,107 @@ nextjs-portal { display: none; }
   transform: none;
   box-shadow: none;
 }
+
+/* ── RESPONSIVE MOBILE ── */
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+
+  .app-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr var(--player-h) 60px;
+  }
+
+  .main-content {
+    grid-column: 1 / 2;
+    grid-row: 1 / 2;
+  }
+
+  .player-bar {
+    grid-column: 1 / 2;
+    grid-row: 2 / 3;
+    padding: 0 12px;
+  }
+
+  .pb-track { gap: 8px; }
+  .pb-right { display: none; }
+  .pb-center { flex: 1; }
+
+  .page-content {
+    padding: 12px !important;
+  }
+
+  .page-header {
+    padding: 12px 12px 0 !important;
+  }
+
+  .song-row {
+    padding: 8px 10px;
+    gap: 10px;
+  }
+
+  .song-num { display: none; }
+
+  .np-content {
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .np-left { width: 100%; }
+  .np-right { width: 100%; }
+
+  .np-cover {
+    width: 200px !important;
+    height: 200px !important;
+    margin: 0 auto;
+  }
+
+  .stats-grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .search-tags {
+    flex-wrap: wrap;
+  }
+
+  .chat-bubble { max-width: 85%; }
+
+  .modal-box {
+    width: 90vw !important;
+    margin: 0 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    z-index: 100;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0 8px;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Đẩy player bar lên trên bottom nav */
+  .player-bar {
+    bottom: 60px !important;
+  }
+
+  .app-layout {
+    padding-bottom: 60px;
+  }
+}
+
+/* Desktop: ẩn bottom nav */
+.bottom-nav {
+  display: none;
+}

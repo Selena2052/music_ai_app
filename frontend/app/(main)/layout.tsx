@@ -8,6 +8,7 @@ import PlayerBar from '@/components/player/PlayerBar';
 import NowPlaying from '@/components/player/NowPlaying';
 import dynamic from 'next/dynamic';
 import { useMusicStore } from '@/stores/musicStore';
+import BottomNav from '@/components/layout/BottomNav';
 
 const AudioPlayer = dynamic(
     () => import('@/components/player/AudioPlayer'),
@@ -60,6 +61,7 @@ export default function MainLayout({
             {/* Now Playing full screen, hiện khi toggle */}
             <NowPlaying />
             <AudioPlayer />
+             <BottomNav />
         </div>
     );
 }
