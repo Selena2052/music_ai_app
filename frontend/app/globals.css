@@ -1429,110 +1429,32 @@ nextjs-portal { display: none; }
 }
 
 /* ── RESPONSIVE MOBILE ── */
+.bottom-nav { display: none; }
+
 @media (max-width: 768px) {
-  .sidebar {
-    display: none;
+  body {
+    overflow: auto !important;
+    height: auto !important;
   }
 
   .app-layout {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr var(--player-h) 60px;
+    grid-template-columns: 1fr !important;
+    grid-template-rows: 1fr !important;
+    height: auto !important;
+    min-height: 100vh;
+    overflow: visible !important;
+    padding-bottom: 0 !important;
   }
+
+  .sidebar { display: none !important; }
 
   .main-content {
-    grid-column: 1 / 2;
-    grid-row: 1 / 2;
+    grid-column: 1 / 2 !important;
+    grid-row: 1 / 2 !important;
+    overflow: visible !important;
+    height: auto !important;
+    padding-bottom: 160px;
   }
-
-  .player-bar {
-    grid-column: 1 / 2;
-    grid-row: 2 / 3;
-    padding: 0 12px;
-  }
-
-  .pb-track { gap: 8px; }
-  .pb-right { display: none; }
-  .pb-center { flex: 1; }
-
-  .page-content {
-    padding: 12px !important;
-  }
-
-  .page-header {
-    padding: 12px 12px 0 !important;
-  }
-
-  .song-row {
-    padding: 8px 10px;
-    gap: 10px;
-  }
-
-  .song-num { display: none; }
-
-  .np-content {
-    flex-direction: column;
-    gap: 16px;
-    padding: 16px;
-  }
-
-  .np-left { width: 100%; }
-  .np-right { width: 100%; }
-
-  .np-cover {
-    width: 200px !important;
-    height: 200px !important;
-    margin: 0 auto;
-  }
-
-  .stats-grid-4 {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-
-  .search-tags {
-    flex-wrap: wrap;
-  }
-
-  .chat-bubble { max-width: 85%; }
-
-  .modal-box {
-    width: 90vw !important;
-    margin: 0 20px;
-  }
-}
-
-@media (max-width: 768px) {
-  .bottom-nav {
-    display: flex;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    z-index: 100;
-    justify-content: space-around;
-    align-items: center;
-    padding: 0 8px;
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  /* Đẩy player bar lên trên bottom nav */
-  .player-bar {
-    bottom: 60px !important;
-  }
-
-  .app-layout {
-    padding-bottom: 60px;
-  }
-}
-
-/* Desktop: ẩn bottom nav */
-.bottom-nav {
-  display: none;
-}
-
-@media (max-width: 768px) {
 
   .page-header {
     flex-direction: column;
@@ -1557,37 +1479,44 @@ nextjs-portal { display: none; }
     white-space: nowrap;
   }
 
+  .page-content {
+    padding: 12px 14px !important;
+  }
+
   .player-bar {
-    position: fixed in !important;
+    position: fixed !important;
     bottom: 60px !important;
     left: 0 !important;
     right: 0 !important;
+    z-index: 150 !important;
     grid-template-columns: 1fr auto !important;
-    z-index: 150;
+    grid-row: unset !important;
+    grid-column: unset !important;
   }
 
-  .app-layout {
-    height: calc(100vh - 60px) !important;
-    padding-bottom: 0 !important;
+  .pb-right { display: none !important; }
+
+  .bottom-nav {
+    display: flex !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 60px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    z-index: 999 !important;
+    justify-content: space-around;
+    align-items: center;
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
-  .main-content {
-    overflow-y: auto;
-    padding-bottom: 150px;
-  }
-
-  .rec-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-
-  .story-secs {
-    grid-template-columns: 1fr !important;
-  }
-
-  .chat-page {
-    padding: 0 14px;
-    height: calc(100vh - 150px - 60px);
-  }
+  .song-num { display: none; }
+  .song-row { padding: 8px 10px; gap: 10px; }
+  .rec-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .story-secs { grid-template-columns: 1fr !important; }
+  .chat-bubble { max-width: 85%; }
+  .modal-box { width: 90vw !important; margin: 0 20px; }
 
   .np-content {
     grid-template-columns: 1fr !important;
@@ -1595,4 +1524,16 @@ nextjs-portal { display: none; }
     overflow-y: auto;
   }
 
+  .np-left, .np-right { width: 100% !important; }
+
+  .np-cover {
+    width: 200px !important;
+    height: 200px !important;
+    margin: 0 auto;
+  }
+
+  .chat-page {
+    padding: 0 14px;
+    height: auto;
+  }
 }
